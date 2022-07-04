@@ -3,12 +3,12 @@ import numpy as np
 
 class ReplayBuffer:
     def __init__(
-        self,
-        buffer_size,
-        obs_shape,
-        obs_dtype,
-        action_dim,
-        action_dtype,
+            self,
+            buffer_size,
+            obs_shape,
+            obs_dtype,
+            action_dim,
+            action_dtype,
     ):
         self.max_size = buffer_size
         self.obs_shape = obs_shape
@@ -35,7 +35,7 @@ class ReplayBuffer:
 
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
-    
+
     def load_dataset(self, dataset):
         observations = np.array(dataset["observations"], dtype=self.obs_dtype)
         next_observations = np.array(dataset["next_observations"], dtype=self.obs_dtype)
@@ -90,7 +90,7 @@ class ReplayBuffer:
     def sample(self, batch_size):
 
         batch_indices = np.random.randint(0, self.size, size=batch_size)
-        
+
         return {
             "observations": self.observations[batch_indices].copy(),
             "actions": self.actions[batch_indices].copy(),
@@ -98,7 +98,7 @@ class ReplayBuffer:
             "terminals": self.terminals[batch_indices].copy(),
             "rewards": self.rewards[batch_indices].copy()
         }
-    
+
     def sample_all(self):
         return {
             "observations": self.observations[:self.size].copy(),
