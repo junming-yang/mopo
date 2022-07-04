@@ -6,10 +6,6 @@ from typing import Union
 from common import util
 
 
-class DynamicsModel(nn.Module):
-    pass
-
-
 def get_network(param_shape, deconv=False):
     """
     Parameters

@@ -28,10 +28,12 @@ def set_device_and_logger(gpu_id, logger_ent):
     print("setting device:", device)
     logger = logger_ent
 
+
 def relative_path_to_module_path(relative_path):
     path = relative_path.replace(".py", "").replace(os.path.sep,'.')
     return path
-    
+
+
 def load_config(config_path, update_args):
     default_config_path_elements = config_path.split(os.sep)
     default_config_path_elements[-1] = "default.py"

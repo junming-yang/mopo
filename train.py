@@ -19,6 +19,8 @@ from buffer import ReplayBuffer
 from logger import Logger
 from trainer import Trainer
 
+from models_torch.transition_model import TransitionModel
+
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -74,12 +76,12 @@ def train(args=get_args()):
 
     # create policy model
     actor_backbone = MLP(input_dim=np.prod(args.obs_shape), hidden_dims=[256, 256])
-    critic1_backbone = MLP(input_dim=np.prod(args.obs_shape)+args.action_dim, hidden_dims=[256, 256])
-    critic2_backbone = MLP(input_dim=np.prod(args.obs_shape)+args.action_dim, hidden_dims=[256, 256])
+    critic1_backbone = MLP(input_dim=np.prod(args.obs_shape) + args.action_dim, hidden_dims=[256, 256])
+    critic2_backbone = MLP(input_dim=np.prod(args.obs_shape) + args.action_dim, hidden_dims=[256, 256])
     dist = DiagGaussian(
-        latent_dim=getattr(actor_backbone, "output_dim"), 
+        latent_dim=getattr(actor_backbone, "output_dim"),
         output_dim=args.action_dim,
-        unbounded=True, 
+        unbounded=True,
         conditioned_sigma=True
     )
 
@@ -93,14 +95,14 @@ def train(args=get_args()):
     if args.auto_alpha:
         target_entropy = args.target_entropy if args.target_entropy \
             else -np.prod(env.action_space.shape)
-        
+
         args.target_entropy = target_entropy
 
         log_alpha = torch.zeros(1, requires_grad=True, device=args.device)
         alpha_optim = torch.optim.Adam([log_alpha], lr=args.alpha_lr)
-        args.alpha = (target_entropy, log_alpha, alpha_optim)    
+        args.alpha = (target_entropy, log_alpha, alpha_optim)
 
-    # create policy
+        # create policy
     sac_policy = SACPolicy(
         actor,
         critic1,
@@ -117,6 +119,28 @@ def train(args=get_args()):
     )
 
     # create dynamics model
+    transition_model = {
+        "model_batch_size": 256,
+        "use_weight_decay": True,
+        "optimizer_class": "Adam",
+        "learning_rate": 0.001,
+        "holdout_ratio": 0.2,
+        "inc_var_loss": True,
+        "model": {
+            "hidden_dims": [200, 200, 200, 200],
+            "decay_weights": [0.000025, 0.00005, 0.000075, 0.000075, 0.0001],
+            "act_fn": "swish",
+            "out_act_fn": "identity",
+            "num_elite": 5,
+            "ensemble_size": 7
+        }
+    }
+    dynamics_model = TransitionModel(env.observation_space,
+                                     env.action_space,
+                                     env_name="Hopper-v3",
+                                     **transition_model
+                                     )
+    """
     dynamics_model = construct_model(
         obs_dim=np.prod(args.obs_shape),
         act_dim=args.action_dim,
@@ -127,7 +151,7 @@ def train(args=get_args()):
         separate_mean_var=True,
         load_dir=args.dynamics_model_dir
     )
-
+    """
     # create buffer
     offline_buffer = ReplayBuffer(
         buffer_size=len(dataset["observations"]),
@@ -138,14 +162,35 @@ def train(args=get_args()):
     )
     offline_buffer.load_dataset(dataset)
     model_buffer = ReplayBuffer(
-        buffer_size=args.rollout_batch_size*args.rollout_length*args.model_retain_epochs,
+        buffer_size=args.rollout_batch_size * args.rollout_length * args.model_retain_epochs,
         obs_shape=args.obs_shape,
         obs_dtype=np.float32,
         action_dim=args.action_dim,
         action_dtype=np.float32
     )
-    
+
     # create MOPO algo
+    trainer_params = {
+        "max_epoch": 125,
+        "agent_batch_size": 256,
+        "rollout_batch_size": 100000,
+        "rollout_mini_batch_size": 10000,
+        "model_retain_epochs": 1,
+        "num_env_steps_per_epoch": 1000,
+        "train_model_interval": 250,
+        "train_agent_interval": 1,
+        "max_trajectory_length": 1000,
+        "eval_interval": 1000,
+        "num_eval_trajectories": 10,
+        "snapshot_interval": 2000,
+        "warmup_timesteps": 5000,
+        "save_video_demo_interval": -1,
+        "log_interval": 250,
+        "model_env_ratio": 0.95,
+        "num_agent_updates_per_env_step": 2,
+        "max_model_update_epochs_to_improve": 5,
+        "max_model_train_iterations": "None"
+    }
     task = args.task.split('-')[0]
     import_path = f"static_fns.{task}"
     static_fns = importlib.import_module(import_path).StaticFns
@@ -157,11 +202,13 @@ def train(args=get_args()):
         model_buffer=model_buffer,
         reward_penalty_coef=args.reward_penalty_coef,
         rollout_length=args.rollout_length,
-        rollout_batch_size=args.rollout_batch_size,
+        # rollout_batch_size=args.rollout_batch_size,
         batch_size=args.batch_size,
-        real_ratio=args.real_ratio
+        real_ratio=args.real_ratio,
+        **trainer_params
     )
-
+    algo.learn_dynamics()
+    exit()
     # log
     t0 = datetime.datetime.now().strftime("%m%d_%H%M%S")
     log_file = f'seed_{args.seed}_{t0}-{args.task.replace("-", "_")}_{args.algo_name}'
@@ -184,7 +231,7 @@ def train(args=get_args()):
 
     # pretrain dynamics model on the whole dataset
     trainer.train_dynamics()
-    
+
     # begin train
     trainer.train_policy()
 

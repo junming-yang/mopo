@@ -25,6 +25,7 @@ class BNN:
     """Neural network models which model aleatoric uncertainty (and possibly epistemic uncertainty
     with ensembling).
     """
+
     def __init__(self, params):
         """Initializes a class instance.
 
@@ -44,7 +45,8 @@ class BNN:
         self.name = get_required_argument(params, 'name', 'Must provide name.')
         self.model_dir = params.get('model_dir', None)
 
-        print('[ BNN ] Initializing model: {} | {} networks | {} elites'.format(params['name'], params['num_networks'], params['num_elites']))
+        print('[ BNN ] Initializing model: {} | {} networks | {} elites'.format(params['name'], params['num_networks'],
+                                                                                params['num_elites']))
         if params.get('sess', None) is None:
             config = tf.ConfigProto()
             # config.gpu_options.allow_growth = True
@@ -82,7 +84,7 @@ class BNN:
             self.num_elites = params['num_elites']
         else:
             self.num_nets = params.get('num_networks', 1)
-            self.num_elites = params['num_elites'] #params.get('num_elites', 1)
+            self.num_elites = params['num_elites']  # params.get('num_elites', 1)
             self.model_loaded = False
 
         self.deterministic = params.get('deterministic', False)
@@ -96,7 +98,9 @@ class BNN:
         if self.num_nets == 1:
             print("Created a neural network with variance predictions.")
         else:
-            print("Created an ensemble of {} neural networks with variance predictions | Elites: {}".format(self.num_nets, self.num_elites))
+            print(
+                "Created an ensemble of {} neural networks with variance predictions | Elites: {}".format(self.num_nets,
+                                                                                                          self.num_elites))
 
     @property
     def is_probabilistic(self):
@@ -194,9 +198,11 @@ class BNN:
             with self.sess.as_default():
                 with tf.variable_scope(self.name):
                     self.scaler = TensorStandardScaler(self.layers[0].get_input_dim())
-                    self.max_logvar = tf.Variable(np.ones([1, self.layers[-1].get_output_dim() // 2])/2., dtype=tf.float32,
+                    self.max_logvar = tf.Variable(np.ones([1, self.layers[-1].get_output_dim() // 2]) / 2.,
+                                                  dtype=tf.float32,
                                                   name="max_log_var")
-                    self.min_logvar = tf.Variable(-np.ones([1, self.layers[-1].get_output_dim() // 2])*10., dtype=tf.float32,
+                    self.min_logvar = tf.Variable(-np.ones([1, self.layers[-1].get_output_dim() // 2]) * 10.,
+                                                  dtype=tf.float32,
                                                   name="min_log_var")
                     for i, layer in enumerate(self.layers):
                         with tf.variable_scope("Layer%i" % i):
@@ -208,9 +214,11 @@ class BNN:
             with self.sess.as_default():
                 with tf.variable_scope(self.name):
                     self.scaler = TensorStandardScaler(self.layers[0].get_input_dim())
-                    self.max_logvar = tf.Variable(np.ones([1, self.var_layers[-1].get_output_dim()])/2., dtype=tf.float32,
+                    self.max_logvar = tf.Variable(np.ones([1, self.var_layers[-1].get_output_dim()]) / 2.,
+                                                  dtype=tf.float32,
                                                   name="max_log_var")
-                    self.min_logvar = tf.Variable(-np.ones([1, self.var_layers[-1].get_output_dim()])*10., dtype=tf.float32,
+                    self.min_logvar = tf.Variable(-np.ones([1, self.var_layers[-1].get_output_dim()]) * 10.,
+                                                  dtype=tf.float32,
                                                   name="min_log_var")
                     for i, layer in enumerate(self.layers):
                         with tf.variable_scope("Layer%i_mean" % i):
@@ -240,7 +248,8 @@ class BNN:
                                                     shape=[self.num_nets, None, self.layers[-1].get_output_dim()],
                                                     name="training_targets")
             if not self.deterministic:
-                train_loss = tf.reduce_sum(self._compile_losses(self.sy_train_in, self.sy_train_targ, inc_var_loss=True))
+                train_loss = tf.reduce_sum(
+                    self._compile_losses(self.sy_train_in, self.sy_train_targ, inc_var_loss=True))
                 train_loss += tf.add_n(self.decays)
                 train_loss += 0.01 * tf.reduce_sum(self.max_logvar) - 0.01 * tf.reduce_sum(self.min_logvar)
             else:
@@ -261,7 +270,7 @@ class BNN:
                 self.create_prediction_tensors(self.sy_pred_in2d, factored=True)
             self.sy_pred_mean2d = tf.reduce_mean(self.sy_pred_mean2d_fac, axis=0)
             self.sy_pred_var2d = tf.reduce_mean(self.sy_pred_var2d_fac, axis=0) + \
-                tf.reduce_mean(tf.square(self.sy_pred_mean2d_fac - self.sy_pred_mean2d), axis=0)
+                                 tf.reduce_mean(tf.square(self.sy_pred_mean2d_fac - self.sy_pred_mean2d), axis=0)
 
             self.sy_pred_in3d = tf.placeholder(dtype=tf.float32,
                                                shape=[self.num_nets, None, self.layers[0].get_input_dim()],
@@ -302,7 +311,9 @@ class BNN:
             num_layers = len(self.var_layers)
             for layer in range(num_layers):
                 # net_state = self._state[i]
-                params = {key: np.stack([self._state[net][len(self.layers)+layer][key] for net in range(self.num_nets)]) for key in keys}
+                params = {
+                    key: np.stack([self._state[net][len(self.layers) + layer][key] for net in range(self.num_nets)]) for
+                    key in keys}
                 ops.extend(self.var_layers[layer].set_model_vars(params))
         self.sess.run(ops)
 
@@ -318,7 +329,7 @@ class BNN:
                 updated = True
                 improvement = (best - current) / best
                 # print('epoch {} | updated {} | improvement: {:.4f} | best: {:.4f} | current: {:.4f}'.format(epoch, i, improvement, best, current))
-        
+
         if updated:
             self._epochs_since_update = 0
         else:
@@ -358,7 +369,7 @@ class BNN:
             feed_dict={
                 self.sy_train_in: inputs,
                 self.sy_train_targ: targets
-                }
+            }
         )
         mean_elite_loss = np.sort(losses)[:self.num_elites].mean()
         return mean_elite_loss
@@ -402,6 +413,7 @@ class BNN:
         with self.sess.as_default():
             self.scaler.fit(inputs)
 
+        # set some params
         idxs = np.random.randint(inputs.shape[0], size=[self.num_nets, inputs.shape[0]])
         if hide_progress:
             progress = Silent()
@@ -416,9 +428,11 @@ class BNN:
         # else:
         #     epoch_range = trange(epochs, unit="epoch(s)", desc="Network training")
 
+        # start train BNN
         t0 = time.time()
         grad_updates = 0
         for epoch in epoch_iter:
+            # batch update
             for batch_num in range(int(np.ceil(idxs.shape[-1] / batch_size))):
                 batch_idxs = idxs[:, batch_num * batch_size:(batch_num + 1) * batch_size]
                 self.sess.run(
@@ -428,32 +442,33 @@ class BNN:
                 grad_updates += 1
 
             idxs = shuffle_rows(idxs)
+            # evaluate and compute loss
             if not hide_progress:
                 if holdout_ratio < 1e-12:
                     losses = self.sess.run(
-                            self.mse_loss,
-                            feed_dict={
-                                self.sy_train_in: inputs[idxs[:, :max_logging]],
-                                self.sy_train_targ: targets[idxs[:, :max_logging]]
-                            }
-                        )
+                        self.mse_loss,
+                        feed_dict={
+                            self.sy_train_in: inputs[idxs[:, :max_logging]],
+                            self.sy_train_targ: targets[idxs[:, :max_logging]]
+                        }
+                    )
                     named_losses = [['M{}'.format(i), losses[i]] for i in range(len(losses))]
                     progress.set_description(named_losses)
                 else:
                     losses = self.sess.run(
-                            self.mse_loss,
-                            feed_dict={
-                                self.sy_train_in: inputs[idxs[:, :max_logging]],
-                                self.sy_train_targ: targets[idxs[:, :max_logging]]
-                            }
-                        )
+                        self.mse_loss,
+                        feed_dict={
+                            self.sy_train_in: inputs[idxs[:, :max_logging]],
+                            self.sy_train_targ: targets[idxs[:, :max_logging]]
+                        }
+                    )
                     holdout_losses = self.sess.run(
-                            self.mse_loss,
-                            feed_dict={
-                                self.sy_train_in: holdout_inputs,
-                                self.sy_train_targ: holdout_targets
-                            }
-                        )
+                        self.mse_loss,
+                        feed_dict={
+                            self.sy_train_in: holdout_inputs,
+                            self.sy_train_targ: holdout_targets
+                        }
+                    )
                     named_losses = [['M{}'.format(i), losses[i]] for i in range(len(losses))]
                     named_holdout_losses = [['V{}'.format(i), holdout_losses[i]] for i in range(len(holdout_losses))]
                     named_losses = named_losses + named_holdout_losses + [['T', time.time() - t0]]
@@ -640,11 +655,11 @@ class BNN:
             for layer in self.layers:
                 cur_out = layer.compute_output_tensor(cur_out)
 
-            mean = cur_out[:, :, :dim_output//2]
+            mean = cur_out[:, :, :dim_output // 2]
             if self.end_act is not None:
                 mean = self.end_act(mean)
 
-            logvar = self.max_logvar - tf.nn.softplus(self.max_logvar - cur_out[:, :, dim_output//2:])
+            logvar = self.max_logvar - tf.nn.softplus(self.max_logvar - cur_out[:, :, dim_output // 2:])
             logvar = self.min_logvar + tf.nn.softplus(logvar - self.min_logvar)
         else:
             cur_out = self.scaler.transform(inputs)

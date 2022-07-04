@@ -20,10 +20,9 @@ class TransitionModel:
 
         obs_dim = obs_space.shape[0]
         action_dim = action_space.shape[0]
-        hidden_dim = [200, 200]
 
         # fix hidden_dims
-        self.model = EnsembleModel(obs_dim=obs_dim, action_dim=action_dim, hidden_dims=hidden_dim, device=util.device)
+        self.model = EnsembleModel(obs_dim=obs_dim, action_dim=action_dim, device=util.device, **kwargs['model'])
         self.env_name = env_name
         # print("params", type(self.model.parameters()))
         # for i, p in enumerate(self.model.parameters()):
@@ -96,10 +95,18 @@ class TransitionModel:
 
         return done
 
+    def train(self, data, batch_size=32, max_epochs=None, max_epochs_since_update=5,
+              hide_progress=False, holdout_ratio=0.0, max_logging=1000, max_grad_updates=None, timer=None, max_t=None):
+        pass
+
     @torch.no_grad()
     def eval_data(self, data, update_elite_models=False):
         obs_list, action_list, next_obs_list, reward_list = \
-            itemgetter("obs", 'action', 'next_obs', 'reward')(data)
+            itemgetter("observations", 'actions', 'next_observations', 'rewards')(data)
+        obs_list = torch.Tensor(obs_list)
+        action_list = torch.Tensor(action_list)
+        next_obs_list = torch.Tensor(next_obs_list)
+        reward_list = torch.Tensor(reward_list)
         delta_obs_list = next_obs_list - obs_list
         obs_list, action_list = self.transform_obs_action(obs_list, action_list)
         model_input = torch.cat([obs_list, action_list], dim=-1)
@@ -128,7 +135,11 @@ class TransitionModel:
 
     def update(self, data_batch):
         obs_batch, action_batch, next_obs_batch, reward_batch = \
-            itemgetter("obs", 'action', 'next_obs', 'reward')(data_batch)
+            itemgetter("observations", 'actions', 'next_observations', 'rewards')(data_batch)
+        obs_batch = torch.Tensor(obs_batch)
+        action_batch = torch.Tensor(action_batch)
+        next_obs_batch = torch.Tensor(next_obs_batch)
+        reward_batch = torch.Tensor(reward_batch)
 
         delta_obs_batch = next_obs_batch - obs_batch
         obs_batch, action_batch = self.transform_obs_action(obs_batch, action_batch)
@@ -142,6 +153,7 @@ class TransitionModel:
         train_mse_loss = torch.sum(train_mse_losses)
         train_var_loss = torch.sum(train_var_losses)
         train_transition_loss = train_mse_loss + train_var_loss
+        # Todo: add discriminator
         train_transition_loss += 0.01 * torch.sum(self.model.max_logvar) - 0.01 * torch.sum(
             self.model.min_logvar)  # why
         if self.use_weight_decay:
@@ -181,6 +193,9 @@ class TransitionModel:
 
     @torch.no_grad()
     def predict(self, obs, act, deterministic=False):
+        """
+        predict next_obs and rew
+        """
         if len(obs.shape) == 1:
             obs = obs[None,]
             act = act[None,]

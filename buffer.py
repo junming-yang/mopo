@@ -107,3 +107,7 @@ class ReplayBuffer:
             "terminals": self.terminals[:self.size].copy(),
             "rewards": self.rewards[:self.size].copy()
         }
+
+    @property
+    def get_size(self):
+        return self.size
