@@ -32,37 +32,29 @@ class Trainer:
 
     def train_dynamics(self):
         self.algo.learn_dynamics()
-        self.algo.save_dynamics_model(
-            save_path=os.path.join(self.logger.writer.get_logdir(), "dynamics_model")
-        )
+        #self.algo.save_dynamics_model(
+            #save_path=os.path.join(self.logger.writer.get_logdir(), "dynamics_model")
+        #)
 
     def train_policy(self):
         start_time = time.time()
-
         num_timesteps = 0
         # train loop
         for e in range(1, self._epoch + 1):
-
             self.algo.policy.train()
-
             with tqdm(total=self._step_per_epoch, desc=f"Epoch #{e}/{self._epoch}") as t:
                 while t.n < t.total:
                     if num_timesteps % self._rollout_freq == 0:
                         self.algo.rollout_transitions()
-                    
                     # update policy by sac
                     loss = self.algo.learn_policy()
-
                     t.set_postfix(**loss)
-
                     # log
                     if num_timesteps % self._log_freq == 0:
                         for k, v in loss.items():
                             self.logger.record(k, v, num_timesteps, printed=False)
-                    
                     num_timesteps += 1
                     t.update(1)
-            
             # evaluate current policy
             eval_info = self._evaluate()
             ep_reward_mean, ep_reward_std = np.mean(eval_info["eval/episode_reward"]), np.std(eval_info["eval/episode_reward"])
@@ -73,7 +65,6 @@ class Trainer:
         
             # save policy
             torch.save(self.algo.policy.state_dict(), os.path.join(self.logger.writer.get_logdir(), "policy.pth"))
-
         self.logger.print("total time: {:.3f}s".format(time.time() - start_time))
 
     def _evaluate(self):

@@ -24,7 +24,7 @@ class MOPO():
             batch_size,
             real_ratio,
             agent_batch_size=100,
-            model_batch_size=32,
+            model_batch_size=256,
             rollout_batch_size=100000,
             rollout_mini_batch_size=1000,
             model_retain_epochs=1,
@@ -87,19 +87,18 @@ class MOPO():
 
     def rollout_transitions(self):
         init_transitions = self._sample_initial_transitions()
-
         # rollout
         observations = init_transitions["observations"]
         for _ in range(self._rollout_length):
             actions = self.policy.sample_action(observations)
-            next_observations, rewards, terminals, infos = self.fake_env.step(observations, actions)
-
+            next_observations, rewards, terminals, infos = self.dynamics_model.predict(observations, actions)
+            rew_len = len(rewards)
+            rewards = rewards.reshape(rew_len, 1)
+            terminals = terminals.reshape(rew_len, 1)
             self.model_buffer.add_batch(observations, next_observations, actions, rewards, terminals)
-
             nonterm_mask = (~terminals).flatten()
             if nonterm_mask.sum() == 0:
                 break
-
             observations = next_observations[nonterm_mask]
 
     def learn_dynamics(self):
@@ -126,6 +125,7 @@ class MOPO():
         self.logger.log_var("loss/model_eval_mse_loss", eval_mse_losses.mean(), self.model_tot_train_timesteps)
         updated = self.dynamics_model.update_best_snapshots(eval_mse_losses)
         while not break_training:
+            # Todo: add processing bar
             for train_data_batch in dict_batch_generator(train_data, self.model_batch_size):
                 model_log_infos = self.dynamics_model.update(train_data_batch)
                 model_train_iters += 1
@@ -140,6 +140,8 @@ class MOPO():
                 num_epochs_since_prev_best = 0
             if num_epochs_since_prev_best >= self.max_model_update_epochs_to_improve or model_train_iters > self.max_model_train_iterations:
                 break
+            # Debug
+            #break
         self.dynamics_model.load_best_snapshots()
 
         # evaluate data to update the elite models
@@ -186,4 +188,4 @@ class MOPO():
     def save_dynamics_model(self, save_path):
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-        self.dynamics_model.save(save_path, timestep=0)
+        self.dynamics_model.save_model(save_path, timestep=0)

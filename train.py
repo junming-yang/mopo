@@ -207,8 +207,7 @@ def train(args=get_args()):
         real_ratio=args.real_ratio,
         **trainer_params
     )
-    algo.learn_dynamics()
-    exit()
+
     # log
     t0 = datetime.datetime.now().strftime("%m%d_%H%M%S")
     log_file = f'seed_{args.seed}_{t0}-{args.task.replace("-", "_")}_{args.algo_name}'

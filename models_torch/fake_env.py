@@ -22,21 +22,15 @@ class FakeEnv:
     '''
 
     def _get_logprob(self, x, means, variances):
-
         k = x.shape[-1]
-
         ## [ num_networks, batch_size ]
         log_prob = -1 / 2 * (
                 k * np.log(2 * np.pi) + np.log(variances).sum(-1) + (np.power(x - means, 2) / variances).sum(-1))
-
         ## [ batch_size ]
         prob = np.exp(log_prob).sum(0)
-
         ## [ batch_size ]
         log_prob = np.log(prob)
-
         stds = np.std(means, 0).mean(-1)
-
         return log_prob, stds
 
     def step(self, obs, act, deterministic=False):

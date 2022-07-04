@@ -213,6 +213,7 @@ class TransitionModel:
         obs = obs.detach().cpu().numpy()
         act = act.detach().cpu().numpy()
         ensemble_model_stds = pred_diff_logvars.exp().sqrt().detach().cpu().numpy()
+
         if deterministic:
             pred_diff_means = pred_diff_means
         else:
@@ -227,9 +228,31 @@ class TransitionModel:
         next_obs, rewards = pred_diff_samples[:, :-1] + obs, pred_diff_samples[:, -1]
         terminals = self._termination_fn(self.env_name, obs, act, next_obs)
 
-        assert (type(next_obs) == np.ndarray)
+        # penalty rewards
+        penalty_coeff = 1
+        penalty_learned_var = False
+        if penalty_coeff != 0:
+            if not penalty_learned_var:
+                ensemble_means_obs = pred_diff_means[:, :, 1:]
+                mean_obs_means = np.mean(ensemble_means_obs, axis=0)  # average predictions over models
+                diffs = ensemble_means_obs - mean_obs_means
+                normalize_diffs = False
+                if normalize_diffs:
+                    obs_dim = next_obs.shape[1]
+                    obs_sigma = self.model.scaler.cached_sigma[0, :obs_dim]
+                    diffs = diffs / obs_sigma
+                dists = np.linalg.norm(diffs, axis=2)  # distance in obs space
+                penalty = np.max(dists, axis=0)  # max distances over models
+                pass
+            else:
+                penalty = np.amax(np.linalg.norm(ensemble_model_stds, axis=2), axis=0)
+            penalized_rewards = rewards - penalty_coeff * penalty
+        else:
+            penalized_rewards = rewards
 
-        return next_obs, rewards, terminals
+        assert (type(next_obs) == np.ndarray)
+        info = {'penalty': penalty, 'penalized_rewards': penalized_rewards}
+        return next_obs, penalized_rewards, terminals, info
 
     def update_best_snapshots(self, val_losses):
         updated = False
