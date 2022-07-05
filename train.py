@@ -11,7 +11,6 @@ import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from models.tf_dynamics_models.constructor import construct_model
 from models.policy_models import MLP, ActorProb, Critic, DiagGaussian
 from sac import SACPolicy
 from mopo import MOPO
@@ -47,7 +46,7 @@ def get_args():
     parser.add_argument("--real-ratio", type=float, default=0.05)
     parser.add_argument("--dynamics-model-dir", type=str, default=None)
 
-    parser.add_argument("--epoch", type=int, default=1000)
+    parser.add_argument("--epoch", type=int, default=200)
     parser.add_argument("--step-per-epoch", type=int, default=1000)
     parser.add_argument("--eval_episodes", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=256)
@@ -172,22 +171,16 @@ def train(args=get_args()):
     # create MOPO algo
     trainer_params = {
         "max_epoch": 125,
-        "agent_batch_size": 256,
-        "rollout_batch_size": 100000,
+        "rollout_batch_size": 50000,
         "rollout_mini_batch_size": 10000,
         "model_retain_epochs": 1,
         "num_env_steps_per_epoch": 1000,
         "train_model_interval": 250,
-        "train_agent_interval": 1,
         "max_trajectory_length": 1000,
         "eval_interval": 1000,
         "num_eval_trajectories": 10,
         "snapshot_interval": 2000,
-        "warmup_timesteps": 5000,
-        "save_video_demo_interval": -1,
-        "log_interval": 250,
         "model_env_ratio": 0.95,
-        "num_agent_updates_per_env_step": 2,
         "max_model_update_epochs_to_improve": 5,
         "max_model_train_iterations": "None"
     }

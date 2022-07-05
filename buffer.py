@@ -88,9 +88,7 @@ class ReplayBuffer:
             self.size = min(self.size + batch_size, self.max_size)
 
     def sample(self, batch_size):
-
         batch_indices = np.random.randint(0, self.size, size=batch_size)
-
         return {
             "observations": self.observations[batch_indices].copy(),
             "actions": self.actions[batch_indices].copy(),

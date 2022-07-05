@@ -230,7 +230,7 @@ class TransitionModel:
 
         # penalty rewards
         penalty_coeff = 1
-        penalty_learned_var = False
+        penalty_learned_var = True
         if penalty_coeff != 0:
             if not penalty_learned_var:
                 ensemble_means_obs = pred_diff_means[:, :, 1:]
@@ -243,7 +243,6 @@ class TransitionModel:
                     diffs = diffs / obs_sigma
                 dists = np.linalg.norm(diffs, axis=2)  # distance in obs space
                 penalty = np.max(dists, axis=0)  # max distances over models
-                pass
             else:
                 penalty = np.amax(np.linalg.norm(ensemble_model_stds, axis=2), axis=0)
             penalized_rewards = rewards - penalty_coeff * penalty
