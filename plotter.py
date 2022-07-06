@@ -60,7 +60,6 @@ COLORS = (
 
 def convert_tfenvents_to_csv(root_dir, xlabel, ylabel):
     """Recursively convert test/metric from all tfevent file under root_dir to csv."""
-
     tfevent_files = []
     for dirname, _, files in os.walk(root_dir):
         for f in files:
@@ -122,7 +121,7 @@ def smooth(y, radius=0):
 
 def plot_figure(root_dir, task, algo_list, x_label, y_label, title, smooth_radius, color_list=None):
     fig, ax = plt.subplots()
-    if color_list == None:
+    if color_list is None:
         color_list = [COLORS[i] for i in range(len(algo_list))]
     for i, algo in enumerate(algo_list):
         x, y, shaded = csv2numpy(os.path.join(root_dir, task, algo, y_label+'.csv'))
@@ -139,7 +138,7 @@ def plot_figure(root_dir, task, algo_list, x_label, y_label, title, smooth_radiu
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='plotter')
     parser.add_argument(
-        '--root-dir', default='log', help='root dir'
+        '--root-dir', default='log/hopper-medium-replay-v0/mopo', help='root dir'
     )
     parser.add_argument(
         '--task', default='hopper-medium-replay-v0', help='task'

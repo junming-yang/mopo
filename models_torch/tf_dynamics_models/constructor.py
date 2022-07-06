@@ -1,10 +1,9 @@
 import numpy as np
 import tensorflow.compat.v1 as tf
 tf.disable_eager_execution()
-import pdb
 
-from models.tf_dynamics_models.fc import FC
-from models.tf_dynamics_models.bnn import BNN
+from models_torch.tf_dynamics_models.fc import FC
+from models_torch.tf_dynamics_models.bnn import BNN
 
 def construct_model(obs_dim=11, act_dim=3, rew_dim=1, hidden_dim=200, num_networks=7,
 					num_elites=5, session=None, model_type='mlp', separate_mean_var=False,

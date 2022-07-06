@@ -11,14 +11,13 @@ import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
+from models.transition_model import TransitionModel
 from models.policy_models import MLP, ActorProb, Critic, DiagGaussian
-from sac import SACPolicy
-from mopo import MOPO
-from buffer import ReplayBuffer
-from logger import Logger
+from algo.sac import SACPolicy
+from algo.mopo import MOPO
+from common.buffer import ReplayBuffer
+from common.logger import Logger
 from trainer import Trainer
-
-from models_torch.transition_model import TransitionModel
 
 
 def get_args():
@@ -73,6 +72,21 @@ def train(args=get_args()):
         torch.backends.cudnn.benchmark = False
     env.seed(args.seed)
 
+    # log
+    t0 = datetime.datetime.now().strftime("%m%d_%H%M%S")
+    log_file = f'seed_{args.seed}_{t0}-{args.task.replace("-", "_")}_{args.algo_name}'
+    log_path = os.path.join(args.logdir, args.task, args.algo_name, log_file)
+    writer = SummaryWriter(log_path)
+    writer.add_text("args", str(args))
+    logger = Logger(writer)
+
+    # import configs
+    task = args.task.split('-')[0]
+    import_path = f"static_fns.{task}"
+    static_fns = importlib.import_module(import_path).StaticFns
+    config_path = f"config.{task}"
+    config = importlib.import_module(config_path).default_config
+
     # create policy model
     actor_backbone = MLP(input_dim=np.prod(args.obs_shape), hidden_dims=[256, 256])
     critic1_backbone = MLP(input_dim=np.prod(args.obs_shape) + args.action_dim, hidden_dims=[256, 256])
@@ -101,7 +115,7 @@ def train(args=get_args()):
         alpha_optim = torch.optim.Adam([log_alpha], lr=args.alpha_lr)
         args.alpha = (target_entropy, log_alpha, alpha_optim)
 
-        # create policy
+    # create policy
     sac_policy = SACPolicy(
         actor,
         critic1,
@@ -118,26 +132,10 @@ def train(args=get_args()):
     )
 
     # create dynamics model
-    transition_model = {
-        "model_batch_size": 256,
-        "use_weight_decay": True,
-        "optimizer_class": "Adam",
-        "learning_rate": 0.001,
-        "holdout_ratio": 0.2,
-        "inc_var_loss": True,
-        "model": {
-            "hidden_dims": [200, 200, 200, 200],
-            "decay_weights": [0.000025, 0.00005, 0.000075, 0.000075, 0.0001],
-            "act_fn": "swish",
-            "out_act_fn": "identity",
-            "num_elite": 5,
-            "ensemble_size": 7
-        }
-    }
     dynamics_model = TransitionModel(env.observation_space,
                                      env.action_space,
-                                     env_name="Hopper-v3",
-                                     **transition_model
+                                     static_fns=static_fns
+                                     **config["transition_params"]
                                      )
     """
     dynamics_model = construct_model(
@@ -169,24 +167,6 @@ def train(args=get_args()):
     )
 
     # create MOPO algo
-    trainer_params = {
-        "max_epoch": 125,
-        "rollout_batch_size": 50000,
-        "rollout_mini_batch_size": 10000,
-        "model_retain_epochs": 1,
-        "num_env_steps_per_epoch": 1000,
-        "train_model_interval": 250,
-        "max_trajectory_length": 1000,
-        "eval_interval": 1000,
-        "num_eval_trajectories": 10,
-        "snapshot_interval": 2000,
-        "model_env_ratio": 0.95,
-        "max_model_update_epochs_to_improve": 5,
-        "max_model_train_iterations": "None"
-    }
-    task = args.task.split('-')[0]
-    import_path = f"static_fns.{task}"
-    static_fns = importlib.import_module(import_path).StaticFns
     algo = MOPO(
         sac_policy,
         dynamics_model,
@@ -195,19 +175,11 @@ def train(args=get_args()):
         model_buffer=model_buffer,
         reward_penalty_coef=args.reward_penalty_coef,
         rollout_length=args.rollout_length,
-        # rollout_batch_size=args.rollout_batch_size,
         batch_size=args.batch_size,
         real_ratio=args.real_ratio,
-        **trainer_params
+        logger=logger,
+        **config["mopo_params"]
     )
-
-    # log
-    t0 = datetime.datetime.now().strftime("%m%d_%H%M%S")
-    log_file = f'seed_{args.seed}_{t0}-{args.task.replace("-", "_")}_{args.algo_name}'
-    log_path = os.path.join(args.logdir, args.task, args.algo_name, log_file)
-    writer = SummaryWriter(log_path)
-    writer.add_text("args", str(args))
-    logger = Logger(writer)
 
     # create trainer
     trainer = Trainer(

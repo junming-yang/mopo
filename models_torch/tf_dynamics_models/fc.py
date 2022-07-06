@@ -4,9 +4,6 @@ from __future__ import absolute_import
 
 import numpy as np
 import tensorflow.compat.v1 as tf
-from models.tf_dynamics_models.utils import spectral_norm
-
-import pdb
 
 
 class FC:

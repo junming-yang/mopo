@@ -4,19 +4,17 @@ from __future__ import absolute_import
 
 import os
 import time
-import pdb
 import itertools
 from collections import OrderedDict
 
 import tensorflow.compat.v1 as tf
 import numpy as np
-from tqdm import trange
 from scipy.io import savemat, loadmat
 
-from models.tf_dynamics_models.utils import get_required_argument, TensorStandardScaler
-from models.tf_dynamics_models.fc import FC
+from models_torch.tf_dynamics_models.utils import get_required_argument, TensorStandardScaler
+from models_torch.tf_dynamics_models.fc import FC
 
-from models.tf_dynamics_models.tf_logging import Progress, Silent
+from models_torch.tf_dynamics_models.tf_logging import Progress, Silent
 
 np.set_printoptions(precision=5)
 

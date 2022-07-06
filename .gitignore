@@ -1,4 +1,4 @@
 __pycache__/
 log/
 .DS_Store
-/models/tf_dynamics_models/
+/models_torch/

@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import os
 from common import util, functional
-from models_torch.ensemble_dynamics import EnsembleModel
+from models.ensemble_dynamics import EnsembleModel
 from operator import itemgetter
 from common.normalizer import StandardNormalizer
 from copy import deepcopy
@@ -12,7 +12,7 @@ class TransitionModel:
     def __init__(self,
                  obs_space,
                  action_space,
-                 env_name,
+                 static_fns,
                  holdout_ratio=0.1,
                  inc_var_loss=False,
                  use_weight_decay=False,
@@ -23,7 +23,7 @@ class TransitionModel:
 
         # fix hidden_dims
         self.model = EnsembleModel(obs_dim=obs_dim, action_dim=action_dim, device=util.device, **kwargs['model'])
-        self.env_name = env_name
+        self.static_fns = static_fns
         # print("params", type(self.model.parameters()))
         # for i, p in enumerate(self.model.parameters()):
         #     print(i, p.shape)
@@ -95,10 +95,6 @@ class TransitionModel:
 
         return done
 
-    def train(self, data, batch_size=32, max_epochs=None, max_epochs_since_update=5,
-              hide_progress=False, holdout_ratio=0.0, max_logging=1000, max_grad_updates=None, timer=None, max_t=None):
-        pass
-
     @torch.no_grad()
     def eval_data(self, data, update_elite_models=False):
         obs_list, action_list, next_obs_list, reward_list = \
@@ -165,9 +161,7 @@ class TransitionModel:
         self.model_optimizer.zero_grad()
         train_transition_loss.backward()
         self.model_optimizer.step()
-
         # compute test loss for elite model
-
         return {
             "loss/train_model_loss_mse": train_mse_loss.item(),
             "loss/train_model_loss_var": train_var_loss.item(),
@@ -226,7 +220,7 @@ class TransitionModel:
         pred_diff_samples = pred_diff_means[model_idxes, batch_idxes]
 
         next_obs, rewards = pred_diff_samples[:, :-1] + obs, pred_diff_samples[:, -1]
-        terminals = self._termination_fn(self.env_name, obs, act, next_obs)
+        terminals = self.static_fns.termination_fn(obs, act, next_obs)
 
         # penalty rewards
         penalty_coeff = 1
