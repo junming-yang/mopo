@@ -90,6 +90,7 @@ class MOPO():
         self.dynamics_model.reset_best_snapshots()
 
         # init eval_mse_losses
+        self.logger.print("Start training dynamics")
         eval_mse_losses, _ = self.dynamics_model.eval_data(eval_data, update_elite_models=False)
         self.logger.record("loss/model_eval_mse_loss", eval_mse_losses.mean(), self.model_tot_train_timesteps)
         updated = self.dynamics_model.update_best_snapshots(eval_mse_losses)

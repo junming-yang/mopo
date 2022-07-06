@@ -137,18 +137,7 @@ def train(args=get_args()):
                                      static_fns=static_fns,
                                      **config["transition_params"]
                                      )
-    """
-    dynamics_model = construct_model(
-        obs_dim=np.prod(args.obs_shape),
-        act_dim=args.action_dim,
-        hidden_dim=200,
-        num_networks=args.n_ensembles,
-        num_elites=args.n_elites,
-        model_type="mlp",
-        separate_mean_var=True,
-        load_dir=args.dynamics_model_dir
-    )
-    """
+
     # create buffer
     offline_buffer = ReplayBuffer(
         buffer_size=len(dataset["observations"]),
