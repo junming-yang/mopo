@@ -7,7 +7,6 @@ class StaticFns:
         assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
 
         done = np.array([False]).repeat(len(obs))
-        done = done[:,None]
         return done
 
     @staticmethod

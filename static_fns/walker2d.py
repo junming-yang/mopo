@@ -13,5 +13,4 @@ class StaticFns:
                    * (angle > -1.0) \
                    * (angle < 1.0)
         done = ~not_done
-        done = done[:, None]
         return done

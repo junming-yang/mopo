@@ -43,58 +43,6 @@ class TransitionModel:
         self.act_normalizer = StandardNormalizer()
         self.model_train_timesteps = 0
 
-    def _termination_fn(self, env_name, obs, act, next_obs):
-        assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
-        if env_name in ["Hopper-v2", "Hopper-v3"]:
-            height = next_obs[:, 0]
-            angle = next_obs[:, 1]
-            not_done = np.isfinite(next_obs).all(axis=-1) \
-                       * np.abs(next_obs[:, 1:] < 100).all(axis=-1) \
-                       * (height > .7) \
-                       * (np.abs(angle) < .2)
-
-            done = ~not_done
-        elif env_name in ["Walker2d-v2", "Walker2d-v3"]:
-            height = next_obs[:, 0]
-            angle = next_obs[:, 1]
-            not_done = (height > 0.8) \
-                       * (height < 2.0) \
-                       * (angle > -1.0) \
-                       * (angle < 1.0)
-            done = ~not_done
-            return done
-        elif env_name == "HumanoidTruncatedObs-v2":
-            z = next_obs[:, 0]
-            done = (z < 1.0) + (z > 2.0)
-        elif env_name == "InvertedDoublePendulum-v2":
-            sin1, cos1 = next_obs[:, 1], next_obs[:, 3]
-            sin2, cos2 = next_obs[:, 2], next_obs[:, 4]
-            theta_1 = np.arctan2(sin1, cos1)
-            theta_2 = np.arctan2(sin2, cos2)
-            y = 0.6 * (cos1 + np.cos(theta_1 + theta_2))
-
-            done = y <= 1
-            return done
-        elif env_name == "InvertedPendulum-v2":
-            notdone = np.isfinite(next_obs).all(axis=-1) \
-                      * (np.abs(next_obs[:, 1]) <= .2)
-            done = ~notdone
-        elif env_name == "AntTruncatedObs-v2":
-            x = next_obs[:, 0]
-            not_done = np.isfinite(next_obs).all(axis=-1) \
-                       * (x >= 0.2) \
-                       * (x <= 1.0)
-
-            done = ~not_done
-            done = done[:, None]
-            return done
-        elif "Swimmer" in env_name or "HalfCheetah" in env_name:  # No done for these two envs
-            return np.array([False for _ in obs])
-        else:
-            raise NotImplementedError
-
-        return done
-
     @torch.no_grad()
     def eval_data(self, data, update_elite_models=False):
         obs_list, action_list, next_obs_list, reward_list = \

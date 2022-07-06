@@ -134,7 +134,7 @@ def train(args=get_args()):
     # create dynamics model
     dynamics_model = TransitionModel(env.observation_space,
                                      env.action_space,
-                                     static_fns=static_fns
+                                     static_fns=static_fns,
                                      **config["transition_params"]
                                      )
     """
@@ -170,7 +170,6 @@ def train(args=get_args()):
     algo = MOPO(
         sac_policy,
         dynamics_model,
-        static_fns=static_fns,
         offline_buffer=offline_buffer,
         model_buffer=model_buffer,
         reward_penalty_coef=args.reward_penalty_coef,

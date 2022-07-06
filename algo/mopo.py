@@ -10,7 +10,6 @@ class MOPO():
             self,
             policy,
             dynamics_model,
-            static_fns,
             offline_buffer,
             model_buffer,
             reward_penalty_coef,
@@ -27,10 +26,10 @@ class MOPO():
             max_model_update_epochs_to_improve=5,
             max_model_train_iterations="None",
             hold_out_ratio=0.1,
+            **kwargs
     ):
         self.policy = policy
         self.dynamics_model = dynamics_model
-        self.static_fns = static_fns
         self.offline_buffer = offline_buffer
         self.model_buffer = model_buffer
         self._reward_penalty_coef = reward_penalty_coef

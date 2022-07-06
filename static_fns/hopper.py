@@ -14,5 +14,4 @@ class StaticFns:
                    * (np.abs(angle) < .2)
 
         done = ~not_done
-        done = done[:, None]
         return done
