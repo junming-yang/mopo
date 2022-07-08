@@ -95,7 +95,6 @@ class MOPO():
         self.logger.record("loss/model_eval_mse_loss", eval_mse_losses.mean(), self.model_tot_train_timesteps)
         updated = self.dynamics_model.update_best_snapshots(eval_mse_losses)
         while not break_training:
-            # Todo: add processing bar
             for train_data_batch in dict_batch_generator(train_data, self.model_batch_size):
                 model_log_infos = self.dynamics_model.update(train_data_batch)
                 model_train_iters += 1
@@ -122,7 +121,6 @@ class MOPO():
         model_log_infos['misc/norm_act_var'] = torch.mean(torch.Tensor(self.dynamics_model.act_normalizer.var)).item()
         model_log_infos['misc/model_train_epochs'] = model_train_epochs
         model_log_infos['misc/model_train_train_steps'] = model_train_iters
-        self.logger.print(model_log_infos)
         return model_log_infos
 
     """

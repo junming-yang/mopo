@@ -12,9 +12,9 @@ class Logger:
         self.writer.add_scalar(tag, scalar_value, global_step)
         if printed:
             info = f"{tag}: {scalar_value:.3f}"
-            print(info)
+            print("\033[1;32m [info]\033[0m: " + info)
             self.output_file.write(info + '\n')
-    
+
     def print(self, info):
-        print(info)
+        print("\033[1;32m [info]\033[0m: " + info)
         self.output_file.write(info + '\n')

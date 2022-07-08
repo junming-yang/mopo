@@ -31,10 +31,12 @@ class Trainer:
         self._eval_episodes = eval_episodes
 
     def train_dynamics(self):
+        start_time = time.time()
         self.algo.learn_dynamics()
         #self.algo.save_dynamics_model(
             #save_path=os.path.join(self.logger.writer.get_logdir(), "dynamics_model")
         #)
+        self.logger.print("total time: {:.3f}s".format(time.time() - start_time))
 
     def train_policy(self):
         start_time = time.time()
