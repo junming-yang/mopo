@@ -16,7 +16,7 @@ default_config = {
         }
     },
     "mopo_params": {
-        "max_epoch": 125,
+        "max_epoch": 400,
         "rollout_batch_size": 50000,
         "rollout_mini_batch_size": 10000,
         "model_retain_epochs": 1,

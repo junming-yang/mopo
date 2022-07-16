@@ -23,7 +23,7 @@ from trainer import Trainer
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--algo-name", type=str, default="mopo")
-    parser.add_argument("--task", type=str, default="hopper-medium-replay-v0")
+    parser.add_argument("--task", type=str, default="walker2d-medium-replay-v2")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--actor-lr", type=float, default=3e-4)
     parser.add_argument("--critic-lr", type=float, default=3e-4)
@@ -35,17 +35,18 @@ def get_args():
     parser.add_argument('--alpha-lr', type=float, default=3e-4)
 
     # dynamics model's arguments
+    parser.add_argument("--dynamics-lr", type=float, default=0.001)
     parser.add_argument("--n-ensembles", type=int, default=7)
     parser.add_argument("--n-elites", type=int, default=5)
     parser.add_argument("--reward-penalty-coef", type=float, default=1.0)
-    parser.add_argument("--rollout-length", type=int, default=5)
+    parser.add_argument("--rollout-length", type=int, default=1)
     parser.add_argument("--rollout-batch-size", type=int, default=50000)
     parser.add_argument("--rollout-freq", type=int, default=1000)
     parser.add_argument("--model-retain-epochs", type=int, default=5)
     parser.add_argument("--real-ratio", type=float, default=0.05)
     parser.add_argument("--dynamics-model-dir", type=str, default=None)
 
-    parser.add_argument("--epoch", type=int, default=450)
+    parser.add_argument("--epoch", type=int, default=1000)
     parser.add_argument("--step-per-epoch", type=int, default=1000)
     parser.add_argument("--eval_episodes", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=256)
@@ -132,9 +133,10 @@ def train(args=get_args()):
     )
 
     # create dynamics model
-    dynamics_model = TransitionModel(env.observation_space,
-                                     env.action_space,
+    dynamics_model = TransitionModel(obs_space=env.observation_space,
+                                     action_space=env.action_space,
                                      static_fns=static_fns,
+                                     lr=args.dynamics_lr,
                                      **config["transition_params"]
                                      )
 

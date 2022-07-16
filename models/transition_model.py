@@ -13,6 +13,7 @@ class TransitionModel:
                  obs_space,
                  action_space,
                  static_fns,
+                 lr,
                  holdout_ratio=0.1,
                  inc_var_loss=False,
                  use_weight_decay=False,
@@ -21,17 +22,11 @@ class TransitionModel:
         obs_dim = obs_space.shape[0]
         action_dim = action_space.shape[0]
 
-        # fix hidden_dims
         self.model = EnsembleModel(obs_dim=obs_dim, action_dim=action_dim, device=util.device, **kwargs['model'])
         self.static_fns = static_fns
-        # print("params", type(self.model.parameters()))
-        # for i, p in enumerate(self.model.parameters()):
-        #     print(i, p.shape)
-        # exit(0)
+        self.lr = lr
 
-        # fix lr
-        self.model_optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
-
+        self.model_optimizer = torch.optim.Adam(self.model.parameters(), self.lr)
         self.networks = {
             "model": self.model
         }
@@ -139,8 +134,8 @@ class TransitionModel:
         predict next_obs and rew
         """
         if len(obs.shape) == 1:
-            obs = obs[None,]
-            act = act[None,]
+            obs = obs[None, ]
+            act = act[None, ]
         if not isinstance(obs, torch.Tensor):
             obs = torch.FloatTensor(obs).to(util.device)
         if not isinstance(act, torch.Tensor):
@@ -193,6 +188,8 @@ class TransitionModel:
 
         assert (type(next_obs) == np.ndarray)
         info = {'penalty': penalty, 'penalized_rewards': penalized_rewards}
+        penalized_rewards = penalized_rewards[:, None]
+        terminals = terminals[:, None]
         return next_obs, penalized_rewards, terminals, info
 
     def update_best_snapshots(self, val_losses):

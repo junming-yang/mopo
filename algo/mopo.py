@@ -61,9 +61,6 @@ class MOPO():
         for _ in range(self._rollout_length):
             actions = self.policy.sample_action(observations)
             next_observations, rewards, terminals, infos = self.dynamics_model.predict(observations, actions)
-            rew_len = len(rewards)
-            rewards = rewards.reshape(rew_len, 1)
-            terminals = terminals.reshape(rew_len, 1)
             self.model_buffer.add_batch(observations, next_observations, actions, rewards, terminals)
             nonterm_mask = (~terminals).flatten()
             if nonterm_mask.sum() == 0:
@@ -107,7 +104,8 @@ class MOPO():
             if updated:
                 model_train_epochs += num_epochs_since_prev_best
                 num_epochs_since_prev_best = 0
-            if num_epochs_since_prev_best >= self.max_model_update_epochs_to_improve or model_train_iters > self.max_model_train_iterations:
+            if num_epochs_since_prev_best >= self.max_model_update_epochs_to_improve or model_train_iters > self.max_model_train_iterations\
+                    or self.model_tot_train_timesteps > 800000:
                 break
             # Debug
             # break
