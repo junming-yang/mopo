@@ -5,7 +5,7 @@ import torch
 from common.functional import dict_batch_generator
 
 
-class MOPO():
+class MOPO:
     def __init__(
             self,
             policy,

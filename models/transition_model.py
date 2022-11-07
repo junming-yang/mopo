@@ -86,13 +86,13 @@ class TransitionModel:
         # predict with model
         model_input = torch.cat([obs_batch, action_batch], dim=-1)
         predictions = self.model.predict(model_input)
+
         # compute training loss
         groundtruths = torch.cat((delta_obs_batch, reward_batch), dim=-1)
         train_mse_losses, train_var_losses = self.model_loss(predictions, groundtruths)
         train_mse_loss = torch.sum(train_mse_losses)
         train_var_loss = torch.sum(train_var_losses)
         train_transition_loss = train_mse_loss + train_var_loss
-        # Todo: add discriminator
         train_transition_loss += 0.01 * torch.sum(self.model.max_logvar) - 0.01 * torch.sum(
             self.model.min_logvar)  # why
         if self.use_weight_decay:
