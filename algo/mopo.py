@@ -152,7 +152,5 @@ class MOPO:
         loss = self.policy.learn(data)
         return loss
 
-    def save_dynamics_model(self, save_path):
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-        self.dynamics_model.save_model(save_path, timestep=0)
+    def save_dynamics_model(self, info):
+        self.dynamics_model.save_model(info)

@@ -36,6 +36,7 @@ class Trainer:
         #self.algo.save_dynamics_model(
             #save_path=os.path.join(self.logger.writer.get_logdir(), "dynamics_model")
         #)
+        self.algo.save_dynamics_model("dynamics_model")
         self.logger.print("total time: {:.3f}s".format(time.time() - start_time))
 
     def train_policy(self):
