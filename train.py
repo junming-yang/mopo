@@ -80,7 +80,7 @@ def train(args=get_args()):
     log_path = os.path.join(args.logdir, args.task, args.algo_name, log_file)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
-    logger = Logger(writer)
+    logger = Logger(writer=writer,log_path=log_path)
 
     Devid = 0 if args.device == 'cuda' else -1
     set_device_and_logger(Devid,logger)
