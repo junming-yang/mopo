@@ -3,9 +3,10 @@ import atexit
 
 
 class Logger:
-    def __init__(self, writer, output_fname="progress.txt"):
+    def __init__(self, writer, output_fname="progress.txt", log_path="log"):
         self.writer = writer
         self.output_file = open(os.path.join(self.writer.get_logdir(), output_fname), 'w')
+        self.log_path = log_path
         atexit.register(self.output_file.close)
 
     def record(self, tag, scalar_value, global_step, printed=True):
