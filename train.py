@@ -18,6 +18,7 @@ from algo.mopo import MOPO
 from common.buffer import ReplayBuffer
 from common.logger import Logger
 from trainer import Trainer
+from common.util import set_device_and_logger
 
 
 def get_args():
@@ -79,7 +80,10 @@ def train(args=get_args()):
     log_path = os.path.join(args.logdir, args.task, args.algo_name, log_file)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
-    logger = Logger(writer)
+    logger = Logger(writer=writer,log_path=log_path)
+
+    Devid = 0 if args.device == 'cuda' else -1
+    set_device_and_logger(Devid,logger)
 
     # import configs
     task = args.task.split('-')[0]

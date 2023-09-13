@@ -22,6 +22,7 @@ class TransitionModel:
         obs_dim = obs_space.shape[0]
         action_dim = action_space.shape[0]
 
+        self.device = util.device
         self.model = EnsembleModel(obs_dim=obs_dim, action_dim=action_dim, device=util.device, **kwargs['model'])
         self.static_fns = static_fns
         self.lr = lr
@@ -48,11 +49,11 @@ class TransitionModel:
         reward_list = torch.Tensor(reward_list)
         delta_obs_list = next_obs_list - obs_list
         obs_list, action_list = self.transform_obs_action(obs_list, action_list)
-        model_input = torch.cat([obs_list, action_list], dim=-1)
+        model_input = torch.cat([obs_list, action_list], dim=-1).to(util.device)
         predictions = functional.minibatch_inference(args=[model_input], rollout_fn=self.model.predict,
                                                      batch_size=10000,
                                                      cat_dim=1)  # the inference size grows as model buffer increases
-        groundtruths = torch.cat((delta_obs_list, reward_list), dim=1)
+        groundtruths = torch.cat((delta_obs_list, reward_list), dim=1).to(util.device)
         eval_mse_losses, _ = self.model_loss(predictions, groundtruths, mse_only=True)
         if update_elite_models:
             elite_idx = np.argsort(eval_mse_losses.cpu().numpy())
@@ -84,11 +85,11 @@ class TransitionModel:
         obs_batch, action_batch = self.transform_obs_action(obs_batch, action_batch)
 
         # predict with model
-        model_input = torch.cat([obs_batch, action_batch], dim=-1)
+        model_input = torch.cat([obs_batch, action_batch], dim=-1).to(util.device)
         predictions = self.model.predict(model_input)
 
         # compute training loss
-        groundtruths = torch.cat((delta_obs_batch, reward_batch), dim=-1)
+        groundtruths = torch.cat((delta_obs_batch, reward_batch), dim=-1).to(util.device)
         train_mse_losses, train_var_losses = self.model_loss(predictions, groundtruths)
         train_mse_loss = torch.sum(train_mse_losses)
         train_var_loss = torch.sum(train_var_losses)
@@ -143,7 +144,7 @@ class TransitionModel:
 
         scaled_obs, scaled_act = self.transform_obs_action(obs, act)
 
-        model_input = torch.cat([scaled_obs, scaled_act], dim=-1)
+        model_input = torch.cat([scaled_obs, scaled_act], dim=-1).to(util.device)
         pred_diff_means, pred_diff_logvars = self.model.predict(model_input)
         pred_diff_means = pred_diff_means.detach().cpu().numpy()
         # add curr obs for next obs
