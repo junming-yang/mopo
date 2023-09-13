@@ -170,7 +170,7 @@ class TransitionModel:
         penalty_learned_var = True
         if penalty_coeff != 0:
             if not penalty_learned_var:
-                ensemble_means_obs = pred_diff_means[:, :, 1:]
+                ensemble_means_obs = pred_diff_means[:, :, :-1]
                 mean_obs_means = np.mean(ensemble_means_obs, axis=0)  # average predictions over models
                 diffs = ensemble_means_obs - mean_obs_means
                 normalize_diffs = False

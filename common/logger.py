@@ -5,6 +5,7 @@ import atexit
 class Logger:
     def __init__(self, writer, output_fname="progress.txt"):
         self.writer = writer
+        self.log_path = self.writer.get_logdir()
         self.output_file = open(os.path.join(self.writer.get_logdir(), output_fname), 'w')
         atexit.register(self.output_file.close)
 
